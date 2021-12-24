@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as util from './util';
 
-const supportedTypes = ['json', 'bson', 'xorm', 'gorm', 'form'];
+const supportedTypes = ['json', 'bson', 'xorm', 'gorm', 'form', 'binding'];
 const supportedTypeMaxLen = 5;
 const structFieldRegex = /^\s*([a-zA-Z_][a-zA-Z_\d]*)\s+(.+)`(.*)/;
 
@@ -199,8 +199,68 @@ function generateGormCompletion(fieldName: string, fieldType: string): vscode.Co
 	return items;
 }
 
-export function activate(context: vscode.ExtensionContext) {
+function generateBindingCompletion(fieldName: string, fieldType: string): vscode.CompletionItem[] {
+	let items: vscode.CompletionItem[] = [];
+	let commonTypeUsage: string[]
+	let gormType: string = '';
+	let gormSize: string = '';
+	switch (fieldType) {
+		case 'int':
+		case 'int8':
+		case 'int16':
+		case 'int32':
+		case 'uint':
+		case 'uint8':
+		case 'uint16':
+		case 'uint32':
+			gormType = 'int';
+			break;
+		case 'int64':
+		case 'uint64':
+			gormType = 'bigint';
+			break;
+		case 'float32':
+			gormType = 'float';
+			break;
+		case 'float64':
+			gormType = 'double';
+			break;
+		case 'bool':
+			gormType = 'tinyint';
+			break;
+		case 'string':
+			gormType = 'varchar';
+			gormSize = '255';
+			break;
+		case 'time.Time':
+			gormType = 'datetime';
+			break;
+		case 'complex64':
+		case 'complex128':
+			gormType = 'varchar';
+			gormSize = '64';
+			break;
+		default:
+			gormType = 'text';
+			break;
+	}
 
+	items.push(new vscode.CompletionItem(`binding:"required"`, vscode.CompletionItemKind.Text));
+	if (fieldName.indexOf("email")) {
+		items.push(new vscode.CompletionItem(`binding:"required,email"`, vscode.CompletionItemKind.Text))
+	}
+	if (fieldName.indexOf("url")) {
+		items.push(new vscode.CompletionItem(`binding:"required,url"`, vscode.CompletionItemKind.Text))
+	}
+	if (gormType=="int"){
+		items.push(new vscode.CompletionItem(`binding:"required,gte=1"`, vscode.CompletionItemKind.Text))
+	}
+
+	items.push(new vscode.CompletionItem(`binding:"see the url: https://pkg.go.dev/github.com/go-playground/validator/v10#readme-fields"`, vscode.CompletionItemKind.Text))
+	return items;
+}
+
+export function activate(context: vscode.ExtensionContext) {
 	const structTagCompletion = vscode.languages.registerCompletionItemProvider(
 		'go',
 		{
@@ -239,6 +299,9 @@ export function activate(context: vscode.ExtensionContext) {
 							break;
 						case 'form':
 							items.push(...generateFormCompletion(fieldNameFormat, fieldType));
+							break;
+						case 'binding':
+							items.push(...generateBindingCompletion(fieldNameFormat, fieldType))
 							break;
 					}
 				}

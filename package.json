@@ -11,7 +11,7 @@
 		"json"
 	],
 	"version": "0.0.11",
-	"publisher": "liuchao",
+	"publisher": "amazingboy",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/guyanyijiu/go-struct-tag"
